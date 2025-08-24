@@ -1,6 +1,14 @@
 
 
 const App = () => {
+
+
+  const onSubmit = (e) => {
+    e.preventDefault();
+    console.log("submit");
+  }
+
+
   return (
     <div className="min-h-dvh relative overflow-hidden bg-background text-foreground flex flex-col">
       <div className="absolute inset-0 bg-surface-pattern pointer-events-none"></div>
@@ -33,7 +41,7 @@ const App = () => {
 
           {/* Email Card */}
           <div className="mt-10 mx-auto max-w-2xl px-4 relative">
-            <div className="waitlist-card rounded-2xl p-4 relative">
+            <form onSubmit={onSubmit} className="waitlist-card rounded-2xl p-4 relative">
               <div className="waitlist-field flex items-center gap-3 px-4">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-muted">
                   <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="1.4"/>
@@ -56,11 +64,11 @@ const App = () => {
                   className="flex-1 bg-transparent outline-none text-base placeholder:text-muted/70 text-foreground"
                 />
               </div>
-              <button className="waitlist-button mt-3 w-full font-semibold text-base cursor-pointer">
+              <button type="submit" className="waitlist-button mt-3 w-full font-semibold text-base cursor-pointer">
                 Join The Waitlist
               </button>
               
-            </div>
+            </form>
           </div>
 
           {/* Feature bullets */}
