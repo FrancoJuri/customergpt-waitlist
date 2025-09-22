@@ -1,11 +1,129 @@
+import { useState, useEffect } from 'react';
+import { useForm } from './hooks';
+import { supabase } from './lib/supabaseConfig';
 
+const formValidations = {
+  name: [(value) => value.length > 0, 'Name is required'],
+  email: [(value) => value.length > 0, 'Email is required'],
+}
+
+const WAITLIST_STORAGE_KEY = 'waitlist_registered';
 
 const App = () => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [message, setMessage] = useState({ text: '', type: '' }); // type: 'success', 'error', 'info'
+  const [isAlreadyRegistered, setIsAlreadyRegistered] = useState(false);
 
+  const { formState, onInputChange, onResetForm, isFormValid } = useForm({
+    name: '',
+    email: '',
+  }, formValidations);
 
-  const onSubmit = (e) => {
+  // Verificar si ya está registrado al cargar el componente
+  useEffect(() => {
+    const registeredData = localStorage.getItem(WAITLIST_STORAGE_KEY);
+    if (registeredData) {
+      try {
+        const parsed = JSON.parse(registeredData);
+        setIsAlreadyRegistered(true);
+        setMessage({ 
+          text: `Welcome back! You're already on our waitlist with ${parsed.email}`, 
+          type: 'success' 
+        });
+      } catch {
+        // Si hay error al parsear, limpiar localStorage
+        localStorage.removeItem(WAITLIST_STORAGE_KEY);
+      }
+    }
+  }, []);
+
+  // Función para resetear el estado (útil para desarrollo/testing)
+  const resetRegistration = () => {
+    localStorage.removeItem(WAITLIST_STORAGE_KEY);
+    setIsAlreadyRegistered(false);
+    setMessage({ text: '', type: '' });
+    onResetForm();
+  };
+ 
+  const onSubmit = async (e) => {
     e.preventDefault();
-    console.log("submit");
+    
+    // Si ya está registrado, no permitir nuevo envío
+    if (isAlreadyRegistered) {
+      return;
+    }
+
+    // Validar que el formulario sea válido
+    if (!isFormValid) {
+      setMessage({ text: 'Please fill in all required fields', type: 'error' });
+      return;
+    }
+
+    setIsLoading(true);
+    setMessage({ text: '', type: '' });
+
+    try {
+      // Llamar a la Edge Function usando invoke
+      const { data, error } = await supabase.functions.invoke('waitlist-signup', {
+        body: {
+          name: formState.name.trim(),
+          email: formState.email.trim()
+        }
+      });
+
+      if (error) {
+        console.error('Error calling edge function:', error);
+        
+        // Manejar diferentes tipos de errores
+        if (error.message?.includes('429') || error.message?.includes('rate')) {
+          setMessage({ 
+            text: 'Too many attempts. Please try again later.', 
+            type: 'error' 
+          });
+        } else if (error.message?.includes('409') || error.message?.includes('duplicate')) {
+          setMessage({ 
+            text: 'This email is already registered in the waitlist.', 
+            type: 'info' 
+          });
+        } else {
+          setMessage({ 
+            text: 'An error occurred while processing your request. Please try again later.', 
+            type: 'error' 
+          });
+        }
+        return;
+      }
+
+      // Si hay datos pero con error en la respuesta
+      if (data?.error) {
+        setMessage({ text: 'An error occurred. Please try again later.', type: 'error' });
+        return;
+      }
+
+      // Éxito - Guardar en localStorage y marcar como registrado
+      const registrationData = {
+        email: formState.email,
+        name: formState.name,
+        registeredAt: new Date().toISOString()
+      };
+      
+      localStorage.setItem(WAITLIST_STORAGE_KEY, JSON.stringify(registrationData));
+      setIsAlreadyRegistered(true);
+      
+      setMessage({ 
+        text: data?.message || 'You have been added to the waitlist!', 
+        type: 'success' 
+      });
+
+    } catch (err) {
+      console.error('Unexpected error:', err);
+      setMessage({ 
+        text: 'An unexpected error occurred. Please try again later.', 
+        type: 'error' 
+      });
+    } finally {
+      setIsLoading(false);
+    }
   }
 
 
@@ -50,7 +168,11 @@ const App = () => {
                 <input
                   type="text"
                   placeholder="Your name..."
-                  className="flex-1 bg-transparent outline-none text-base placeholder:text-muted/70 text-foreground"
+                  className="flex-1 bg-transparent outline-none text-base placeholder:text-muted/70 text-foreground disabled:opacity-50"
+                  name="name"
+                  value={formState.name}
+                  onChange={onInputChange}
+                  disabled={isAlreadyRegistered}
                 />
               </div>
               <div className="waitlist-field flex items-center gap-3 px-4 mt-3">
@@ -61,13 +183,56 @@ const App = () => {
                 <input
                   type="email"
                   placeholder="Your email..."
-                  className="flex-1 bg-transparent outline-none text-base placeholder:text-muted/70 text-foreground"
+                  className="flex-1 bg-transparent outline-none text-base placeholder:text-muted/70 text-foreground disabled:opacity-50"
+                  name="email"
+                  value={formState.email}
+                  onChange={onInputChange}
+                  disabled={isAlreadyRegistered}
                 />
               </div>
-              <button type="submit" className="waitlist-button mt-3 w-full font-semibold text-base cursor-pointer">
-                Join The Waitlist
+              <button 
+                type="submit" 
+                disabled={isLoading || !isFormValid || isAlreadyRegistered}
+                className="waitlist-button mt-3 w-full font-semibold text-base cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed relative"
+              >
+                {isAlreadyRegistered ? (
+                  '✓ Already on Waitlist'
+                ) : isLoading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                    </svg>
+                    Joining...
+                  </span>
+                ) : (
+                  'Join The Waitlist'
+                )}
               </button>
               
+              {/* Message display */}
+              {message.text && (
+                <div className={`mt-3 p-3 rounded-lg text-sm text-center transition-all duration-300 ${
+                  message.type === 'success' 
+                    ? 'bg-green-50 text-green-700 border border-green-200' 
+                    : message.type === 'error'
+                    ? 'bg-red-50 text-red-700 border border-red-200'
+                    : 'bg-blue-50 text-blue-700 border border-blue-200'
+                }`}>
+                  {message.text}
+                </div>
+              )}
+
+              {/* Reset button for development */}
+              {isAlreadyRegistered && import.meta.env.DEV && (
+                <button
+                  type="button"
+                  onClick={resetRegistration}
+                  className="mt-2 text-xs text-gray-500 hover:text-gray-700 underline"
+                >
+                  Reset registration (dev only)
+                </button>
+              )}
             </form>
           </div>
 
