@@ -14,7 +14,7 @@ const App = () => {
   const [message, setMessage] = useState({ text: '', type: '' }); // type: 'success', 'error', 'info'
   const [isAlreadyRegistered, setIsAlreadyRegistered] = useState(false);
 
-  const { formState, onInputChange, onResetForm, isFormValid } = useForm({
+  const { formState, onInputChange, isFormValid } = useForm({
     name: '',
     email: '',
   }, formValidations);
@@ -38,12 +38,12 @@ const App = () => {
   }, []);
 
   // Función para resetear el estado (útil para desarrollo/testing)
-  const resetRegistration = () => {
+  /* const resetRegistration = () => {
     localStorage.removeItem(WAITLIST_STORAGE_KEY);
     setIsAlreadyRegistered(false);
     setMessage({ text: '', type: '' });
     onResetForm();
-  };
+  }; */
  
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -131,25 +131,25 @@ const App = () => {
     <div className="min-h-dvh relative overflow-hidden bg-background text-foreground flex flex-col">
       <div className="absolute inset-0 bg-surface-pattern pointer-events-none"></div>
       {/* Glows to match reference */}
-      <div className="glow-purple w-[880px] h-[480px] top-28 left-[10%] -translate-x-10 rounded-full"></div>
-      <div className="glow-blue w-[1000px] h-[520px] bottom-16 right-[8%] translate-x-10 rounded-full"></div>
+      <div className="glow-orange w-[880px] h-[480px] top-28 left-[10%] -translate-x-10 rounded-full"></div>
+      <div className="glow-amber w-[1000px] h-[520px] bottom-16 right-[8%] translate-x-10 rounded-full"></div>
       <main className="relative flex-1 flex flex-col">
         <section className="max-w-4xl mx-auto px-6 pt-16 pb-16 sm:pt-24">
           {/* Badges */}
           <div className="flex items-center justify-center gap-2">
-            <span className="inline-flex items-center gap-2 rounded-full bg-white/70 backdrop-blur-sm shadow-[0_2px_0_0_rgba(99,102,241,0.35)] ring-1 ring-ring/60 px-3 py-1 text-xs font-medium text-foreground/70">
-              Waitlist v1
+            <span className="inline-flex items-center gap-2 rounded-full bg-white/70 backdrop-blur-sm shadow-[0_2px_0_0_rgba(249,115,22,0.35)] ring-1 ring-ring/60 px-3 py-1 text-xs font-medium text-foreground/70">
+              Waitlist
             </span>
-            <span className="inline-flex items-center rounded-full bg-white/70 backdrop-blur-sm shadow-[0_2px_0_0_rgba(99,102,241,0.35)] ring-1 ring-ring/60 px-3 py-1 text-xs font-medium text-foreground/70">
+            <span className="inline-flex items-center rounded-full bg-white/70 backdrop-blur-sm shadow-[0_2px_0_0_rgba(249,115,22,0.35)] ring-1 ring-ring/60 px-3 py-1 text-xs font-medium text-foreground/70">
               Coming Soon
             </span>
           </div>
 
           {/* Heading */}
           <h1 className="mt-6 text-center font-display text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight leading-tight text-foreground">
-            Get <span className="text-indigo-500">AI support</span> and <span className="text-indigo-500">feedback</span>
+            Get <span className="text-orange-500">AI support</span> and <span className="text-orange-500">feedback</span>
             <br className="hidden sm:block" />
-            with just <span className="text-indigo-500">one line</span> of code
+            with just <span className="text-orange-500">one line</span> of code
           </h1>
 
           {/* Subtext */}
@@ -224,7 +224,7 @@ const App = () => {
               )}
 
               {/* Reset button for development */}
-              {isAlreadyRegistered && import.meta.env.DEV && (
+              {/* {isAlreadyRegistered && import.meta.env.DEV && (
                 <button
                   type="button"
                   onClick={resetRegistration}
@@ -232,7 +232,7 @@ const App = () => {
                 >
                   Reset registration (dev only)
                 </button>
-              )}
+              )} */}
             </form>
           </div>
 
@@ -240,7 +240,7 @@ const App = () => {
           <div className="mt-10">
             <ul className="flex flex-wrap items-center justify-center gap-x-12 gap-y-3">
               <li className="inline-flex items-center gap-2 text-sm text-foreground/80">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-indigo-600">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-orange-600">
                   <path d="M9 8l-4 4 4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
                   <path d="M15 8l4 4-4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>

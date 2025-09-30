@@ -1,6 +1,8 @@
 //@ts-nocheck
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { render } from "npm:@react-email/render@0.0.17";
+import WelcomeEmail from "./email-template.tsx";
 
 interface WaitlistRequest {
   name?: string;
@@ -14,9 +16,52 @@ interface RateLimitConfig {
 
 // Configuración de rate limiting
 const RATE_LIMIT_CONFIG: RateLimitConfig = {
-  maxAttempts: 3, // máximo 5 intentos
-  windowMinutes: 10, // en una ventana de 15 minutos
+  maxAttempts: 5,
+  windowMinutes: 10, 
 };
+
+// Function to send welcome email using Resend API
+async function sendWelcomeEmail(name: string, email: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const resendApiKey = Deno.env.get('RESEND_API_KEY');
+    
+    if (!resendApiKey) {
+      console.error('RESEND_API_KEY not found in environment variables');
+      return { success: false, error: 'Email service not configured' };
+    }
+
+    // Render React Email template to HTML
+    const emailHtml = await render(WelcomeEmail({ name }));
+
+    // Send email using Resend API (fetch method as per docs)
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${resendApiKey}`
+      },
+      body: JSON.stringify({
+        from: 'CustomerGPT <welcome@news.customergpt.pro>',
+        to: [email],
+        subject: 'Welcome to CustomerGPT waitlist! 🎉',
+        html: emailHtml,
+      })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      console.error('Resend API error:', data);
+      return { success: false, error: data.message || 'Failed to send email' };
+    }
+
+    console.log('Email sent successfully:', data);
+    return { success: true };
+  } catch (err) {
+    console.error('Error sending email:', err);
+    return { success: false, error: err.message };
+  }
+}
 
 Deno.serve(async (req: Request) => {
   // PRIMERO: Manejar preflight requests (OPTIONS)
@@ -178,6 +223,13 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // Send welcome email (non-blocking - we don't want to fail the signup if email fails)
+    const emailResult = await sendWelcomeEmail(data.name || 'there', data.email);
+    
+    if (!emailResult.success) {
+      console.warn('Failed to send welcome email, but user was added to waitlist:', emailResult.error);
+    }
+
     // Respuesta exitosa
     return new Response(
       JSON.stringify({ 
@@ -187,7 +239,8 @@ Deno.serve(async (req: Request) => {
           email: data.email,
           name: data.name,
           created_at: data.created_at
-        }
+        },
+        emailSent: emailResult.success
       }),
       { 
         status: 201, 
@@ -293,16 +346,8 @@ async function recordAttempt(supabase: any, ipAddress: string) {
           last_attempt_at: new Date().toISOString()
         });
     }
-
-    /* // Limpiar registros antiguos (más de 24 horas)
-    const cleanupTime = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    await supabase
-      .from('rate_limit_attempts')
-      .delete()
-      .lt('last_attempt_at', cleanupTime.toISOString()); */
-      
+  
   } catch (err) {
     console.error('Error recording attempt:', err);
-    // No lanzamos error aquí para no bloquear la request principal
   }
 }
