@@ -138,7 +138,7 @@ const App = () => {
           {/* Badges */}
           <div className="flex items-center justify-center gap-2">
             <span className="inline-flex items-center gap-2 rounded-full bg-white/70 backdrop-blur-sm shadow-[0_2px_0_0_rgba(249,115,22,0.35)] ring-1 ring-ring/60 px-3 py-1 text-xs font-medium text-foreground/70">
-              Waitlist
+              CustomerGPT
             </span>
             <span className="inline-flex items-center rounded-full bg-white/70 backdrop-blur-sm shadow-[0_2px_0_0_rgba(249,115,22,0.35)] ring-1 ring-ring/60 px-3 py-1 text-xs font-medium text-foreground/70">
               Coming Soon

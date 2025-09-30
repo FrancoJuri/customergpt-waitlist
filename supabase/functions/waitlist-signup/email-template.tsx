@@ -17,7 +17,7 @@ interface WelcomeEmailProps {
 export const WelcomeEmail = ({ name = "there" }: WelcomeEmailProps) => (
   <Html>
     <Head />
-    <Preview>CustomerGPT will be available soon! 🎉</Preview>
+    <Preview>CustomerGPT will be available soon! 🎈</Preview>
     <Body style={main}>
       <Container style={container}>
         <Section style={header}>
